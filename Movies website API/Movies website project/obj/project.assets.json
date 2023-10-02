@@ -12083,11 +12083,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\aabdelazeem\\source\\repos\\Movies website project\\Movies website project\\Movies website project.csproj",
+      "projectUniqueName": "C:\\Users\\aabdelazeem\\Documents\\GitHub\\Movies-website\\Movies\\Movies website API\\Movies website project\\Movies website project.csproj",
       "projectName": "Movies website project",
-      "projectPath": "C:\\Users\\aabdelazeem\\source\\repos\\Movies website project\\Movies website project\\Movies website project.csproj",
+      "projectPath": "C:\\Users\\aabdelazeem\\Documents\\GitHub\\Movies-website\\Movies\\Movies website API\\Movies website project\\Movies website project.csproj",
       "packagesPath": "C:\\Users\\aabdelazeem\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\aabdelazeem\\source\\repos\\Movies website project\\Movies website project\\obj\\",
+      "outputPath": "C:\\Users\\aabdelazeem\\Documents\\GitHub\\Movies-website\\Movies\\Movies website API\\Movies website project\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\aabdelazeem\\AppData\\Roaming\\NuGet\\NuGet.Config",

@@ -8,7 +8,7 @@ namespace Movies_website_project.Entities
     {
         [SwaggerSchema(ReadOnly = true)]
         public int Id { get; set; }
-        public string Title { get; set; }
+        public string? Title { get; set; }
         [FromForm]
         [NotMapped]
         public IFormFile? PosterImage { get; set; }
@@ -17,8 +17,11 @@ namespace Movies_website_project.Entities
         [NotMapped]
         public string? ReviewsString {  get; set; }
         public string? PosterPath { get; set; }
-        public DateTime ReleaseDate { get; set;}
+        public DateTime? ReleaseDate { get; set;}
         public ICollection<Actor>? Actors { get; set;}
         public ICollection<Review>? Reviews { get; set; }
+        public byte[] ImageByteArray { get; set; }
+        [NotMapped]
+        public bool visible { get; set; }
     }
 }

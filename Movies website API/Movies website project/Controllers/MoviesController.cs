@@ -171,12 +171,28 @@ namespace Movies_website_project.Controllers
         {
             ActorsController actorsController = new ActorsController(_context);
             ReviewsController reviewsController = new ReviewsController(_context);
+            
+            List<Review> reviewList = new List<Review>();
+            List<Actor> actorList = new List<Actor>();
             if (_context.Movies == null)
             {
               return Problem("Entity set 'DBContext.Movies'  is null.");
             }
+            if(movie.Title == null)
+            {
+                return BadRequest("Movie title is required");
+            }
+            if (movie.ReleaseDate == null)
+            {
+                return BadRequest("Release Date is required");
+            }
+            if(movie.PosterImage == null)
+            {
+                return BadRequest("The Poster image is required");
+            }
+
             //saving the poster in uploads and its path in database
-            var uniqueFileName = Guid.NewGuid().ToString() + "_" + movie.PosterImage?.FileName;
+            var uniqueFileName = movie.PosterImage.FileName;
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
             var filePath = Path.Combine(uploadsFolder, uniqueFileName);
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -190,25 +206,58 @@ namespace Movies_website_project.Controllers
             {
                 return BadRequest("This movie title already exists");
             }
-            //Cheking for the existing actors
-            List<Actor> actors = new List<Actor>();
-            if (movie.Actors != null)
+
+            
+            var options = new JsonSerializerOptions
             {
-                foreach (var actor in movie.Actors)
+                PropertyNameCaseInsensitive = true // If needed for case-insensitive property matching
+            };
+            if (!string.IsNullOrEmpty(movie.ActorsString))
+            {
+                actorList = JsonSerializer.Deserialize<List<Actor>>(movie.ActorsString, options);
+            }
+            if (actorList != null)
+            {
+                List<Actor> actors = new List<Actor>();
+                foreach (var actor in actorList)
                 {
-                    var actorCheck = _context.actors.Where(m => m.name.ToLower() == actor.name.ToLower()).SingleOrDefault();
+                    var actorCheck = _context.actors.Where(m => m.id == actor.id).FirstOrDefault();
                     if (actorCheck == null)
                     {
-                        actorsController.PostActor(actor);
-                        actors.Add(actor);
+                        var actorCheckTask = actorsController.PostActor(actor);
+                        actorCheck = await actorCheckTask;
+                        actors.Add(actorCheck);
                     }
                     else
                     {
-                        actors.Add(actorCheck);
+                        actorCheck.name = actor.name;
+                        bool exists = false;
+                        
+                        var actorExists = actors.Any(actor => actor.name.ToLower() == actorCheck.name.ToLower());
+                        
+                        if (actorExists == false)
+                        {
+                            actors.Add(actorCheck);
+                        }
                     }
                 }
+                movie.Actors = actors;
             }
-            movie.Actors = actors;
+            if (!string.IsNullOrEmpty(movie.ReviewsString))
+            {
+                reviewList = JsonSerializer.Deserialize<List<Review>>(movie.ReviewsString, options);
+            }
+            if (reviewList != null)
+            {
+                List<Review> reviews = new List<Review>();
+                foreach (var review in reviewList)
+                {
+                    review.MovieId = movie.Id;
+                    reviews.Add(review);
+                    await reviewsController.PostReview(review);
+                }
+                movie.Reviews = reviews;
+            }
             _context.Movies.Add(movie);
             await _context.SaveChangesAsync();
 
@@ -234,7 +283,35 @@ namespace Movies_website_project.Controllers
 
             return NoContent();
         }
+        [HttpPost("upload-poster/{movieId}")]
+        public async Task<IActionResult> UploadPosterImage(int movieId, IFormFile file)
+        {
+            var movie = await _context.Movies.FindAsync(movieId);
+            if (movie == null)
+            {
+                return NotFound();
+            }
 
+            using (var memoryStream = new MemoryStream())
+            {
+                await file.CopyToAsync(memoryStream);
+                movie.ImageByteArray = memoryStream.ToArray();
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok("Poster image uploaded successfully.");
+        }
+        [HttpGet("poster/{movieId}")]
+        public async Task<IActionResult> GetPosterImage(int movieId)
+        {
+            var movie = await _context.Movies.FindAsync(movieId);
+            if (movie == null || movie.ImageByteArray == null)
+            {
+                return NotFound();
+            }
+
+            return File(movie.ImageByteArray, "image/jpeg"); // Adjust the content type as needed.
+        }
         private bool MovieExists(int id)
         {
             return (_context.Movies?.Any(e => e.Id == id)).GetValueOrDefault();

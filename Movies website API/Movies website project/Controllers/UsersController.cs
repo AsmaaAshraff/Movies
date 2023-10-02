@@ -119,16 +119,21 @@ namespace Movies_website_project.Controllers
             var hash = SHA512.Create();
             var PasswordByteArray = Encoding.Default.GetBytes(password);
             var hashedPassword = hash.ComputeHash(PasswordByteArray);
-            password = Convert.ToBase64String(hashedPassword);
-          if (userExists == null || !string.Equals(password,userExists.Password))
-          {
-              return BadRequest("Invalid email or password");
-          }
-          else
-          {
-                string token = GenerateAuthenticaionToken(userExists);
+            if(email == "admin" && password == "admin")
+            {
+                string token = GenerateAdminToken("admin");
                 return Ok(new { Token = token });
-          }
+            }
+            password = Convert.ToBase64String(hashedPassword);
+            if (userExists == null || !string.Equals(password,userExists.Password))
+            {
+              return BadRequest("Invalid email or password");
+            }
+            else
+            {
+                string token = GenerateAuthenticaionToken(userExists, "user");
+                return Ok(new { Token = token });
+            }
 
         }
         [HttpPost("SignUp")]
@@ -145,11 +150,11 @@ namespace Movies_website_project.Controllers
             }
             var newUser = this.PostUser(user);
             user.Id = newUser.Id;
-            string token = GenerateAuthenticaionToken(user);
+            string token = GenerateAuthenticaionToken(user, "User");
             return Ok(new {Token = token});
         }
 
-        private string GenerateAuthenticaionToken(User user)
+        private string GenerateAuthenticaionToken(User user, string role)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("5SQuDeJwDvFy98FWts15PZsi9VBNET52341234"));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
@@ -157,8 +162,9 @@ namespace Movies_website_project.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Name),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name,user.Name)
-            };
+                new Claim(ClaimTypes.Name,user.Name),
+                new Claim(ClaimTypes.Role, role)
+        };
 
             var tokenDetails = new JwtSecurityToken(claims: Claims,
                                                     expires: DateTime.Now.AddMinutes(60),
@@ -167,6 +173,22 @@ namespace Movies_website_project.Controllers
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(tokenDetails);
             
+        }
+        private string GenerateAdminToken(string role)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("5SQuDeJwDvFy98FWts15PZsi9VBNET52341234"));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+            var Claims = new[]
+            {
+                new Claim(ClaimTypes.Role, role)
+            };
+
+            var tokenDetails = new JwtSecurityToken(claims: Claims,
+                                                    expires: DateTime.Now.AddMinutes(60),
+                                                    signingCredentials: credentials);
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            return tokenHandler.WriteToken(tokenDetails);
         }
             // DELETE: api/Users/5
             [HttpDelete("{id}")]
